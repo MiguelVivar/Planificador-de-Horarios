@@ -84,11 +84,16 @@ Para mejorar o cambiar, sigue estos pasos:
 ## Autores
 **Miguel Vivar**   
 GitHub: [MiguelVivar](https://github.com/MiguelVivar)
+
 **Mario Muñoz**   
-GitHub: [Mancilla](https://github.com/MiguelVivar)
+GitHub: [Muñoz](https://github.com/ChuchiPr) 
+
 **Luis Mitma**   
-GitHub: [LuisMitma](https://github.com/MiguelVivar)
+GitHub: [LuisMitma](https://github.com/MiguelVivar) 
+
 **Angielina Soto**   
+
 GitHub: [Vinn](https://github.com/MiguelVivar)
+
 **Anthony Palomino** 
 GitHub: [Anthony](https://github.com/MiguelVivar)
