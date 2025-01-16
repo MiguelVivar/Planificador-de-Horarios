@@ -40,7 +40,7 @@ def iniciar():
 
     # Crear la ventana principal
     root = tk.Tk()
-    root.title("HorariUN")
+    root.title("Planificador")
     root.state("zoomed")
     root.config(bg="#f0f0f0")  # Color de fondo de la ventana
 
