@@ -32,7 +32,7 @@ pip install openpyxl
 
 ## Estructura del Proyecto
 ```
-HorariUN/
+Planificador-de-Horarios/
 ├── main.py                # Archivo principal de la aplicación
 ├── gui/
 │   └── interfaz.py        # Módulo para la interfaz gráfica
