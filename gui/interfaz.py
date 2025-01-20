@@ -1,14 +1,27 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import ttk
 from modules.validador import validar_datos
 from modules.excel import guardar_en_excel
 from modules.conflictos import verificar_conflicto
 
+
+# Función para validar datos
+def validar_datos(curso, empieza, termina, profesor):
+    if not curso or not empieza or not termina or not profesor:
+        return "Todos los campos son obligatorios.", False
+    if empieza >= termina:
+        return "La hora de inicio debe ser menor que la hora de término.", False
+    return "Datos validados correctamente.", True
+
+# Función ficticia para verificar conflictos (esto debe definirse en el archivo `guardar_excel.py`)
+def verificar_conflicto(hoja, curso, dia, empieza, termina, salon):
+    return "No hay conflictos.", True  # Aquí puedes usar la lógica real de conflictos.
+
 def iniciar():
-    # Crear la ventana principal de la interfaz
     def on_validar():
-        # Obtener datos de entrada desde la interfaz
-        curso = entry_curso.get()
+        # Obtener valores de los campos
+        curso = entrada_curso.get()
         ciclo = ciclo_var.get()
         seccion = seccion_var.get()
         dia = dia_var.get()
@@ -16,127 +29,82 @@ def iniciar():
         termina = termina_var.get()
         salon = salon_var.get()
         tipo = tipo_var.get()
-        profesor = entry_profesor.get()
+        profesor = entrada_profesor.get()
 
-        # Llamar a la función de validación y obtener el mensaje de error o éxito
-        mensaje, CONTINUAR = validar_datos(curso, profesor)
-
-        if CONTINUAR:
-            # Si es válido, guardamos el horario
-            resultado = guardar_en_excel(curso, ciclo, seccion, dia, empieza, termina, salon, tipo, profesor, verificar_conflicto)
-
-            if "Conflicto" in resultado:  # Si el resultado contiene un conflicto
-                # Mostrar mensaje de conflicto en rojo en la interfaz
-                label_mensaje.config(text="¡Conflicto detectado! " + resultado, fg="red")
-            elif "Error" in resultado:  # Si el resultado contiene un mensaje de error
-                # Mostrar mensaje de error en rojo
-                label_mensaje.config(text=resultado, fg="red")
+        # Validar datos
+        mensaje, continuar = validar_datos(curso, empieza, termina, profesor)
+        if continuar:
+            # Guardar datos en Excel
+            resultado = guardar_en_excel(
+                curso, ciclo, seccion, dia, empieza, termina, salon, tipo, profesor, verificar_conflicto
+            )
+            if "correctamente" in resultado:
+                messagebox.showinfo("Éxito", "El horario fue guardado exitosamente.")
             else:
-                # Actualizar el mensaje de éxito en la interfaz (verde)
-                label_mensaje.config(text="Curso agregado correctamente", fg="green")
+                messagebox.showerror("Error", resultado)
         else:
-            # Si hay conflicto, mostrar el mensaje de error en rojo
-            label_mensaje.config(text=mensaje, fg="red")
+            messagebox.showwarning("Advertencia", mensaje)
 
-    # Crear la ventana principal
+    def salir():
+        if messagebox.askyesno("Salir", "¿Estás seguro de que deseas salir?"):
+            root.destroy()
+
+    # Configuración de la ventana principal
     root = tk.Tk()
-    root.title("Planificador")
-    root.state("zoomed")
-    root.config(bg="#f0f0f0")  # Color de fondo de la ventana
+    root.title("Planificador Moderno")
+    root.geometry("700x800")
+    root.configure(bg="#2E4053")
 
-    # Fuente para los textos
-    fuente = ("Arial", 12)
+    # Estilo
+    style = ttk.Style()
+    style.theme_use("clam")
+    style.configure("TButton", font=("Arial", 14, "bold"), padding=10, background="#58D68D", foreground="white")
+    style.map("TButton", background=[("active", "#45B39D")])
+    style.configure("TLabel", background="#2E4053", foreground="white", font=("Arial", 12))
+    style.configure("TEntry", font=("Arial", 12), padding=5)
+    style.configure("TCombobox", font=("Arial", 12))
 
-    # Crear y ubicar los widgets (labels, entradas, botones) con mejor alineación
-    frame = tk.Frame(root, bg="#f0f0f0", padx=30, pady=30)  # Frame para centralizar los widgets
-    frame.pack(expand=True)  # Empaquetamos el frame para que ocupe el 100% de la ventana
+    # Encabezado
+    header = tk.Label(root, text="Planificador de Horarios", font=("Arial", 24, "bold"), bg="#2E4053", fg="#F4D03F")
+    header.pack(pady=20)
 
-    # Crear los labels y entradas de manera centrada
-    label_curso = tk.Label(frame, text="Curso:", font=fuente, bg="#f0f0f0")
-    label_curso.grid(row=0, column=0, padx=10, pady=10, sticky="w")
-    entry_curso = tk.Entry(frame, font=fuente)
-    entry_curso.grid(row=0, column=1, padx=10, pady=10, sticky="w")
+    # Contenedor principal
+    frame = ttk.Frame(root, padding=20, style="TFrame")
+    frame.pack(expand=True, fill="both", padx=20, pady=20)
 
-    # Menú desplegable para Ciclo con números romanos
-    label_ciclo = tk.Label(frame, text="Ciclo:", font=fuente, bg="#f0f0f0")
-    label_ciclo.grid(row=1, column=0, padx=10, pady=10, sticky="w")
-    ciclos_romanos = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
-    ciclo_var = tk.StringVar(value=ciclos_romanos[0])  # Valor por defecto
-    ciclo_menu = tk.OptionMenu(frame, ciclo_var, *ciclos_romanos)
-    ciclo_menu.config(width=15, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    ciclo_menu.grid(row=1, column=1, padx=10, pady=10, sticky="w")
+    # Entradas y menús desplegables
+    elementos = [
+        ("Curso:", ttk.Entry(frame)),
+        ("Ciclo:", ttk.Combobox(frame, values=["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"], state="readonly")),
+        ("Sección:", ttk.Combobox(frame, values=["A", "B"], state="readonly")),
+        ("Día:", ttk.Combobox(frame, values=["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"], state="readonly")),
+        ("Hora de inicio:", ttk.Combobox(frame, values=["07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15", "13:00"], state="readonly")),
+        ("Hora de término:", ttk.Combobox(frame, values=["08:30", "09:15", "10:00", "10:45", "11:30", "12:15", "13:00", "13:45"], state="readonly")),
+        ("Número de salón:", ttk.Combobox(frame, values=[f"A{i:03d}" for i in range(101, 106)], state="readonly")),
+        ("Tipo de clase:", ttk.Combobox(frame, values=["Teoría", "Práctica"], state="readonly")),
+        ("Profesor:", ttk.Entry(frame)),
+    ]
 
-    # Menú desplegable para Sección
-    label_seccion = tk.Label(frame, text="Sección:", font=fuente, bg="#f0f0f0")
-    label_seccion.grid(row=2, column=0, padx=10, pady=10, sticky="w")
-    secciones = ["A", "B"]  # Opciones de sección
-    seccion_var = tk.StringVar(value=secciones[0])  # Valor por defecto
-    seccion_menu = tk.OptionMenu(frame, seccion_var, *secciones)
-    seccion_menu.config(width=10, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    seccion_menu.grid(row=2, column=1, padx=10, pady=10, sticky="w")
+    for i, (label_text, widget) in enumerate(elementos):
+        ttk.Label(frame, text=label_text).grid(row=i, column=0, sticky="e", padx=10, pady=10)
+        widget.grid(row=i, column=1, sticky="w", padx=10, pady=10)
 
-    # Menú desplegable para Día
-    label_dia = tk.Label(frame, text="Día:", font=fuente, bg="#f0f0f0")
-    label_dia.grid(row=3, column=0, padx=10, pady=10, sticky="w")
-    dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
-    dia_var = tk.StringVar(value=dias[0])  # Valor por defecto
-    dia_menu = tk.OptionMenu(frame, dia_var, *dias)
-    dia_menu.config(width=15, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    dia_menu.grid(row=3, column=1, padx=10, pady=10, sticky="w")
+    # Asignar entradas específicas a variables
+    entrada_curso = elementos[0][1]
+    ciclo_var = elementos[1][1]
+    seccion_var = elementos[2][1]
+    dia_var = elementos[3][1]
+    empieza_var = elementos[4][1]
+    termina_var = elementos[5][1]
+    salon_var = elementos[6][1]
+    tipo_var = elementos[7][1]
+    entrada_profesor = elementos[8][1]
 
-    # Menú desplegable para Hora de Inicio
-    label_inicio = tk.Label(frame, text="Hora de inicio:", font=fuente, bg="#f0f0f0")
-    label_inicio.grid(row=4, column=0, padx=10, pady=10, sticky="w")
-    
-    # Generar las horas de inicio de 45 en 45 minutos
-    horas_inicio = ["07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15", "13:00", "13:45"]
+    # Botones
+    boton_guardar = ttk.Button(frame, text="Validar y Guardar", command=on_validar)
+    boton_guardar.grid(row=len(elementos), column=0, columnspan=2, pady=20)
 
-    empieza_var = tk.StringVar(value=horas_inicio[0])  # Valor por defecto
-    empieza_menu = tk.OptionMenu(frame, empieza_var, *horas_inicio)
-    empieza_menu.config(width=10, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    empieza_menu.grid(row=4, column=1, padx=10, pady=10, sticky="w")
+    boton_salir = ttk.Button(frame, text="Salir", command=salir)
+    boton_salir.grid(row=len(elementos) + 1, column=0, columnspan=2, pady=10)
 
-    # Menú desplegable para Hora de Término
-    label_termina = tk.Label(frame, text="Hora de término:", font=fuente, bg="#f0f0f0")
-    label_termina.grid(row=5, column=0, padx=10, pady=10, sticky="w")
-    
-    horas_termina = ["08:30", "09:15", "10:00", "10:45", "11:30", "12:15", "13:00", "13:45"]
-    
-    termina_var = tk.StringVar(value=horas_termina[0])  # Valor por defecto
-    termina_menu = tk.OptionMenu(frame, termina_var, *horas_termina)
-    termina_menu.config(width=10, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    termina_menu.grid(row=5, column=1, padx=10, pady=10, sticky="w")
-
-    # Menú desplegable para Salón
-    label_salon = tk.Label(frame, text="Número de salón:", font=fuente, bg="#f0f0f0")
-    label_salon.grid(row=6, column=0, padx=10, pady=10, sticky="w")
-    salones = [f"A{i:03d}" for i in range(101, 106)]  # Opciones de salón del A101 al A105
-    salon_var = tk.StringVar(value=salones[0])  # Valor por defecto
-    salon_menu = tk.OptionMenu(frame, salon_var, *salones)
-    salon_menu.config(width=10, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    salon_menu.grid(row=6, column=1, padx=10, pady=10, sticky="w")
-
-    # Menú desplegable para Tipo de clase
-    label_tipo = tk.Label(frame, text="Tipo de clase (Teoría o Práctica):", font=fuente, bg="#f0f0f0")
-    label_tipo.grid(row=7, column=0, padx=10, pady=10, sticky="w")
-    tipos = ["Teoría", "Práctica"]  # Opciones de tipo de clase
-    tipo_var = tk.StringVar(value=tipos[0])  # Valor por defecto
-    tipo_menu = tk.OptionMenu(frame, tipo_var, *tipos)
-    tipo_menu.config(width=15, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    tipo_menu.grid(row=7, column=1, padx=10, pady=10, sticky="w")
-
-    label_profesor = tk.Label(frame, text="Nombre del profesor:", font=fuente, bg="#f0f0f0")
-    label_profesor.grid(row=8, column=0, padx=10, pady=10, sticky="w")
-    entry_profesor = tk.Entry(frame, font=fuente)
-    entry_profesor.grid(row=8, column=1, padx=10, pady=10, sticky="w")
-
-    # Label para mostrar el mensaje de éxito o error
-    label_mensaje = tk.Label(frame, text="", font=("Arial", 12, "bold"), fg="red", bg="#f0f0f0")
-    label_mensaje.grid(row=9, column=0, columnspan=2, padx=10, pady=10)
-
-    # Botón para validar y guardar el curso
-    boton_validar = tk.Button(frame, text="Validar y Guardar", command=on_validar, font=fuente, bg="#4CAF50", fg="white", relief="raised")
-    boton_validar.grid(row=10, column=0, columnspan=2, padx=10, pady=20)
-
-    # Ejecutar la interfaz
     root.mainloop()
