@@ -15,6 +15,22 @@ def aplicar_bordes_y_relleno(cell, color_fondo):
     )
     cell.fill = PatternFill(start_color=color_fondo, end_color=color_fondo, fill_type="solid")
 
+def obtener_turno(ciclo):
+    """Obtiene el turno (mañana o tarde) según el ciclo."""
+    turnos = {
+        "I": "Mañana",
+        "II": "Mañana",
+        "III": "Mañana",
+        "IV": "Mañana",
+        "V": "Tarde",
+        "VI": "Tarde",
+        "VII": "Tarde",
+        "VIII": "Tarde",
+        "IX": "Tarde",
+        "X": "Tarde"
+    }
+    return turnos.get(ciclo, "Mañana")  # Por defecto, turno "Mañana"
+
 def guardar_en_excel(curso, ciclo, seccion, dia, empieza, termina, salon, tipo, profesor, verificar_conflicto):
     nombre_archivo = f"horario_{ciclo}_{seccion}.xlsx"
     ruta_carpeta = "data/horarios"
@@ -36,17 +52,32 @@ def guardar_en_excel(curso, ciclo, seccion, dia, empieza, termina, salon, tipo, 
     if not CONTINUAR:
         return mensaje_conflicto
     
-    horas = [
-        ("07:45", "08:30"),
-        ("08:30", "09:15"),
-        ("09:15", "10:00"),
-        ("10:00", "10:45"),
-        ("10:45", "11:30"),
-        ("11:30", "12:15"),
-        ("12:15", "01:00"),
-        ("01:00", "01:45")
-    ]
-    
+    turno_horas = {
+        "Mañana": [
+            ("07:45", "08:30"),
+            ("08:30", "09:15"),
+            ("09:15", "10:00"),
+            ("10:00", "10:45"),
+            ("10:45", "11:30"),
+            ("11:30", "12:15"),
+            ("12:15", "13:00"),
+            ("13:00", "13:45")
+        ],
+        "Tarde": [
+            ("16:00", "16:45"),
+            ("16:45", "17:30"),
+            ("17:30", "18:15"),
+            ("18:15", "19:00"),
+            ("19:00", "19:45"),
+            ("19:45", "20:30"),
+            ("20:30", "21:15"),
+            ("21:15", "22:00")
+        ]
+    }
+
+    turno = obtener_turno(ciclo)
+    horas = turno_horas[turno]
+
     color_encabezado = "ADD8E6"
     color_fila_par = "F0F8FF"
     color_fila_impar = "FFFFFF"
@@ -69,7 +100,7 @@ def guardar_en_excel(curso, ciclo, seccion, dia, empieza, termina, salon, tipo, 
     
     hora_inicio = datetime.strptime(empieza, "%H:%M")
     hora_termina = datetime.strptime(termina, "%H:%M")
-    fila_inicio = (hora_inicio - datetime(2000, 1, 1, 7, 45)).seconds // 2700
+    fila_inicio = (hora_inicio - datetime.strptime(horas[0][0], "%H:%M")).seconds // 2700
 
     dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
     columna_dia = dias.index(dia) + 2
