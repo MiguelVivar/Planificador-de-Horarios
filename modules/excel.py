@@ -1,7 +1,10 @@
+import pandas as pd
 import os
+import shutil
 import openpyxl
-from openpyxl.styles import Border, Side, Alignment, PatternFill
+from openpyxl.styles import PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.worksheet.table import Table, TableStyleInfo
 from datetime import datetime, timedelta
 
 def aplicar_bordes_y_relleno(cell, color_fondo):
@@ -15,7 +18,44 @@ def aplicar_bordes_y_relleno(cell, color_fondo):
     )
     cell.fill = PatternFill(start_color=color_fondo, end_color=color_fondo, fill_type="solid")
 
-def guardar_en_excel(curso, ciclo, seccion, dia, empieza, termina, salon, tipo, profesor, verificar_conflicto):
+def obtener_ciclos():
+    try:
+        df = pd.read_excel("data/datos.xlsx", sheet_name="Ciclos")
+        return [(str(row[0]), row[1], row[2]) for row in df.itertuples(index=False, name=None)]
+    except Exception as e:
+        print(f"Error al leer la hoja 'Ciclos': {e}")
+        return []
+
+
+def obtener_cursos(ciclo):
+    try:
+        df = pd.read_excel("data/datos.xlsx", sheet_name="Cursos")
+        cursos = df[df['Ciclo'] == ciclo]['Curso'].tolist()
+        return cursos
+    except Exception as e:
+        print(f"Error al leer la hoja 'Cursos': {e}")
+        return []
+
+
+def obtener_profesores(curso):
+    try:
+        df = pd.read_excel("data/datos.xlsx", sheet_name="Profesores")
+        profesores = df[df['Cursos'].str.contains(curso)]['Profesor'].tolist()
+        return profesores
+    except Exception as e:
+        print(f"Error al leer la hoja 'Profesores': {e}")
+        return []
+    
+def obtener_salones():
+    try:
+        df = pd.read_excel("data/datos.xlsx", sheet_name="Salones")
+        salones = df['Salón'].tolist()
+        return salones
+    except Exception as e:
+        print(f"Error al leer la hoja 'Salones': {e}")
+        return []
+
+def guardar_horario_excel(ciclo, seccion, empieza, termina, curso, profesor, tipo, dia, salon, turno):
     nombre_archivo = f"horario_{ciclo}_{seccion}.xlsx"
     ruta_carpeta = "data/horarios"
     
@@ -31,26 +71,34 @@ def guardar_en_excel(curso, ciclo, seccion, dia, empieza, termina, salon, tipo, 
         wb = openpyxl.Workbook()
         hoja = wb.active
         hoja.append(["Hora", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"])
-    
-    mensaje_conflicto, CONTINUAR = verificar_conflicto(hoja, curso, dia, empieza, termina, salon)
-    if not CONTINUAR:
-        return mensaje_conflicto
-    
-    horas = [
-        ("07:45", "08:30"),
-        ("08:30", "09:15"),
-        ("09:15", "10:00"),
-        ("10:00", "10:45"),
-        ("10:45", "11:30"),
-        ("11:30", "12:15"),
-        ("12:15", "01:00"),
-        ("01:00", "01:45")
-    ]
-    
+
     color_encabezado = "ADD8E6"
     color_fila_par = "F0F8FF"
     color_fila_impar = "FFFFFF"
     color_borde = "000000"
+
+    if turno == "Mañana":
+        horas = [
+            ("07:45", "08:30"),
+            ("08:30", "09:15"),
+            ("09:15", "10:00"),
+            ("10:00", "10:45"),
+            ("10:45", "11:30"),
+            ("11:30", "12:15"),
+            ("12:15", "01:00"),
+            ("01:00", "01:45")
+        ]
+    else:
+        horas = [
+            ("16:00", "16:45"),
+            ("16:45", "17:30"),
+            ("17:30", "18:15"),
+            ("18:15", "19:00"),
+            ("19:00", "19:45"),
+            ("19:45", "20:30"),
+            ("20:30", "21:15"),
+            ("21:15", "22:00")
+        ]
 
     for i, (hora_inicio, hora_fin) in enumerate(horas):
         hora_cell = hoja.cell(row=i + 2, column=1, value=f"{hora_inicio} - {hora_fin}")

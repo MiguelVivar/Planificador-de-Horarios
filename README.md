@@ -37,8 +37,6 @@ Planificador-de-Horarios/
 ├── gui/
 │   └── interfaz.py        # Módulo para la interfaz gráfica
 ├── modules/
-│   ├── validador.py       # Lógica de validación de datos
-│   ├── conflictos.py      # Verificación de conflictos en los horarios
 │   └── excel.py           # Funciones para guardar datos en Excel
 └── README.md              # Documentación del proyecto
 ```
@@ -52,21 +50,44 @@ Planificador-de-Horarios/
    python main.py
    ```
 
-2. Ingresa los datos del curso:
-   - Nombre del curso
-   - Ciclo (I, II, III, ... X)
-   - Sección (A, B, ...)
-   - Día (Lunes, Martes, ...)
-   - Horario de inicio y término
-   - Salón
-   - Tipo de clase (Teoría o Práctica)
-   - Nombre del profesor
+2. Cargar el archivo excel con los datos. Haciendo click en el bóton **Cargar datos**. El excel debe tener la siguiente estructura:
+   - Hoja "Ciclos":
 
-3. Haz clic en el botón **Validar y Guardar**:
+      - Columna 1: Ciclo (Ejemplo: I, II, III, ..., X)
+      - Columna 2: Estudiantes inscritos (Número de estudiantes)
+      - Columna 3: Turno (Mañana o Tarde)
+
+   - Hoja "Salones":
+
+      - Columna 1: Salón (Ejemplo: A101, A102, ...)
+      - Columna 2: Capacidad (Número de personas)
+
+   - Hoja "Turno":
+
+      - Columna 1: Turno (Mañana o Tarde)
+      - Columna 2: Hora de inicio
+      - Columna 3: Hora de fin
+
+   - Hoja "Cursos":
+
+      - Columna 1: Curso (Nombre del curso)
+      - Columna 2: Ciclo (I, II, III, ...)
+      - Columna 3: Horas de teoría
+      - Columna 4: Horas de prácticas
+      - Columna 6: Código del curso
+
+   - Hoja "Profesores":
+
+      - Columna 1: Profesor (Nombre del profesor)
+      - Columna 2: Cursos (Lista de cursos que el profesor puede enseñar, correspondiente a diferentes ciclos)
+
+3. Completa todos los campos.
+
+4. Haz clic en el botón **Generar horarios**:
    - Si hay un conflicto, se mostrará un mensaje de error en la interfaz.
    - Si los datos son válidos, el horario será guardado en el archivo Excel.
 
-4. Los datos serán exportados automáticamente en un archivo Excel organizado.
+5. Los datos serán exportados automáticamente en un archivo Excel organizado. Puedes abrir el directorio dónde se guarda dando click al bóton **Ver Horarios**:
 
 ---
 
@@ -86,14 +107,19 @@ Para mejorar o cambiar, sigue estos pasos:
 GitHub: [MiguelVivar](https://github.com/MiguelVivar)
 
 **Mario Muñoz**   
-GitHub: [Muñoz](https://github.com/ChuchiPr) 
+GitHub: [ChuchiPr](https://github.com/ChuchiPr) 
 
 **Luis Mitma**   
-GitHub: [LuisMitma](https://github.com/MiguelVivar) 
+GitHub: [Elextranjero1942](https://github.com/Elextranjero1942) 
 
 **Angielina Soto**   
+GitHub: [Rinvinvin](https://github.com/Rinvinvin)
 
-GitHub: [Vinn](https://github.com/MiguelVivar)
+**Rodrigo Conislla**   
+GitHub: [Rodri2505](https://github.com/Rodri2505)
+
+**Juan Ttito**   
+GitHub: [juanttito1003](https://github.com/juanttito1003)
 
 **Anthony Palomino** 
-GitHub: [Anthony](https://github.com/MiguelVivar)
+GitHub: [DaPcxD](https://github.com/DaPcxD)

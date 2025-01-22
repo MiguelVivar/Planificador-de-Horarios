@@ -1,142 +1,184 @@
 import tkinter as tk
-from tkinter import messagebox
-from modules.validador import validar_datos
-from modules.excel import guardar_en_excel
-from modules.conflictos import verificar_conflicto
+from tkinter import ttk, messagebox, filedialog
+from modules.excel import obtener_ciclos, obtener_cursos, obtener_profesores, obtener_salones, guardar_horario_excel
+from datetime import datetime
+import os
+import shutil
+import subprocess  # Para abrir el directorio
+
+class VentanaAplicacion:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Planificador de Horarios")
+        
+        # Variables de control
+        self.ciclo_var = tk.StringVar()
+        self.seccion_var = tk.StringVar()
+        self.curso_var = tk.StringVar()
+        self.profesor_var = tk.StringVar()
+        self.turno_var = tk.StringVar()
+        self.hora_inicio_var = tk.StringVar()
+        self.hora_fin_var = tk.StringVar()
+        self.tipo_clase_var = tk.StringVar()
+        self.dia_clase_var = tk.StringVar()  # Nueva variable para el día de la clase
+
+        # Widgets
+        self.setup_widgets()
+
+    def setup_widgets(self):
+        ttk.Label(self.master, text="Selecciona el Ciclo:").grid(row=0, column=0, pady=5, padx=5, sticky="w")
+        self.ciclo_menu = ttk.Combobox(self.master, textvariable=self.ciclo_var, state="readonly")
+        self.ciclo_menu.grid(row=0, column=1, pady=5, padx=5)
+
+        ttk.Label(self.master, text="Selecciona el Turno:").grid(row=1, column=0, pady=5, padx=5, sticky="w")
+        self.turno_menu = ttk.Entry(self.master, textvariable=self.turno_var, state="readonly")
+        self.turno_menu.grid(row=1, column=1, pady=5, padx=5)
+
+        ttk.Label(self.master, text="Selecciona la Sección:").grid(row=2, column=0, pady=5, padx=5, sticky="w")
+        self.seccion_menu = ttk.Combobox(self.master, textvariable=self.seccion_var, state="readonly")
+        self.seccion_menu.grid(row=2, column=1, pady=5, padx=5)
+
+        ttk.Label(self.master, text="Selecciona el Curso:").grid(row=3, column=0, pady=5, padx=5, sticky="w")
+        self.curso_menu = ttk.Combobox(self.master, textvariable=self.curso_var, state="readonly")
+        self.curso_menu.grid(row=3, column=1, pady=5, padx=5)
+
+        ttk.Label(self.master, text="Selecciona el Profesor:").grid(row=4, column=0, pady=5, padx=5, sticky="w")
+        self.profesor_menu = ttk.Combobox(self.master, textvariable=self.profesor_var, state="readonly")
+        self.profesor_menu.grid(row=4, column=1, pady=5, padx=5)
+
+        ttk.Label(self.master, text="Hora de Inicio:").grid(row=5, column=0, pady=5, padx=5, sticky="w")
+        self.hora_inicio_menu = ttk.Combobox(self.master, textvariable=self.hora_inicio_var, state="readonly")
+        self.hora_inicio_menu.grid(row=5, column=1, pady=5, padx=5)
+
+        ttk.Label(self.master, text="Hora de Fin:").grid(row=6, column=0, pady=5, padx=5, sticky="w")
+        self.hora_fin_menu = ttk.Combobox(self.master, textvariable=self.hora_fin_var, state="readonly")
+        self.hora_fin_menu.grid(row=6, column=1, pady=5, padx=5)
+
+        # Menú desplegable para Tipo de Clase
+        ttk.Label(self.master, text="Tipo de Clase:").grid(row=7, column=0, pady=5, padx=5, sticky="w")
+        self.tipo_clase_menu = ttk.Combobox(self.master, textvariable=self.tipo_clase_var, state="readonly", values=["Teoría", "Práctica"])
+        self.tipo_clase_menu.grid(row=7, column=1, pady=5, padx=5)
+
+        # Menú desplegable para seleccionar el día de la clase
+        ttk.Label(self.master, text="Selecciona el Día de la Clase:").grid(row=8, column=0, pady=5, padx=5, sticky="w")
+        self.dia_clase_menu = ttk.Combobox(self.master, textvariable=self.dia_clase_var, state="readonly", values=["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"])
+        self.dia_clase_menu.grid(row=8, column=1, pady=5, padx=5)
+
+        # Menú despelgable para seleccionar el salón
+        ttk.Label(self.master, text="Selecciona el Salón:").grid(row=9, column=0, pady=5, padx=5, sticky="w")
+        self.salon_menu = ttk.Combobox(self.master, state="readonly")
+        self.salon_menu.grid(row=9, column=1, pady=5, padx=5)
+        self.actualizar_salones()
+
+        # Funciones de actualización
+        self.ciclo_var.trace("w", self.actualizar_datos)
+        self.ciclo_var.trace("w", self.actualizar_cursos)
+        self.curso_var.trace("w", self.actualizar_profesores)
+
+        # Botones
+        ttk.Button(self.master, text="Cargar datos", command=self.cargar_archivo).grid(row=10, column=0, pady=5, padx=5)
+        ttk.Button(self.master, text="Generar Horario", command=self.generar_horario).grid(row=10, column=1, pady=5, padx=5)
+        ttk.Button(self.master, text="Ver Horarios", command=self.ver_horarios).grid(row=10, column=2, pady=5, padx=5)
+
+    def cargar_archivo(self):
+        archivo_seleccionado = filedialog.askopenfilename(title="Selecciona el archivo que contenga los datos", filetypes=[("Archivos Excel", "*.xlsx")])
+
+        if archivo_seleccionado:
+            ruta_destino = "data/datos.xlsx"
+            try:
+                if not os.path.exists(ruta_destino):
+                    os.makedirs("data", exist_ok=True)
+                shutil.copy(archivo_seleccionado, ruta_destino)
+                messagebox.showinfo("Éxito", "Archivo cargado correctamente.")
+                self.actualizar_ciclos()
+                self.actualizar_salones()
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo cargar el archivo: {e}")
+        else:
+            messagebox.showwarning("Advertencia", "No se seleccionó ningún archivo.")
+
+    def actualizar_ciclos(self):
+        try:
+            ciclos = obtener_ciclos()
+            self.ciclo_menu["values"] = [c[0] for c in ciclos]
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo leer los ciclos: {e}")
+
+    def actualizar_datos(self, *args):
+        ciclo_seleccionado = self.ciclo_var.get()
+        for ciclo, secciones, turno in obtener_ciclos():
+            if ciclo == ciclo_seleccionado:
+                self.seccion_menu["values"] = secciones.split(",")
+                self.turno_var.set(turno)
+                self.actualizar_horas(turno)
+                break
+
+    def actualizar_cursos(self, *args):
+        ciclo_seleccionado = self.ciclo_var.get()
+        cursos = obtener_cursos(ciclo_seleccionado)
+        self.curso_menu["values"] = cursos
+
+    def actualizar_profesores(self, *args):
+        curso_seleccionado = self.curso_var.get()
+        profesores = obtener_profesores(curso_seleccionado)
+        self.profesor_menu["values"] = profesores
+
+    def actualizar_horas(self, turno):
+        horas_inicio, horas_fin = self.generar_horas(turno)
+        self.hora_inicio_menu["values"] = horas_inicio
+        self.hora_fin_menu["values"] = horas_fin
+
+    def actualizar_salones(self):
+        salones = obtener_salones()
+        self.salon_menu["values"] = salones
+
+    def generar_horas(self, turno):
+        if turno == "Mañana":
+            horas_inicio = ["07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15", "13:00"]
+            horas_fin = ["08:30", "09:15", "10:00", "10:45", "11:30", "12:15", "13:00", "13:45"]
+        else:
+            horas_inicio = ["16:00", "16:45", "17:30", "18:15", "19:00", "19:45", "20:30", "21:15"]
+            horas_fin = ["16:45", "17:30", "18:15", "19:00", "19:45", "20:30", "21:15", "22:00"]
+
+        return horas_inicio, horas_fin
+
+    def generar_horario(self):
+        ciclo = self.ciclo_var.get()
+        seccion = self.seccion_var.get()
+        curso = self.curso_var.get()
+        profesor = self.profesor_var.get()
+        hora_inicio = self.hora_inicio_var.get()
+        hora_fin = self.hora_fin_var.get()
+        tipo_clase = self.tipo_clase_var.get()
+        dia_clase = self.dia_clase_var.get()
+        salon = self.salon_menu.get()
+        turno = self.turno_var.get()
+
+        if not all([ciclo, seccion, curso, profesor, hora_inicio, hora_fin, tipo_clase, dia_clase, salon, turno]):
+            messagebox.showerror("Error", "Por favor, completa todos los campos.")
+            return
+
+        # Guardar el horario generado en un archivo Excel
+        resultado = guardar_horario_excel(ciclo, seccion, hora_inicio, hora_fin, curso, profesor, tipo_clase, dia_clase, salon, turno)
+        if "correctamente" in resultado:
+                messagebox.showinfo("Éxito", f"Horario generado para el ciclo {ciclo}, sección {seccion}.")
+        else:
+            messagebox.showerror("Error", resultado)
+
+    def ver_horarios(self):
+        directorio_horarios = os.path.join("data", "horarios")
+        if os.path.exists(directorio_horarios):
+            subprocess.Popen(f'explorer "{directorio_horarios}"')
+        else:
+            messagebox.showwarning("Aviso", "No se han generado horarios aún.")
 
 def iniciar():
-    # Crear la ventana principal de la interfaz
-    def on_validar():
-        # Obtener datos de entrada desde la interfaz
-        curso = entry_curso.get()
-        ciclo = ciclo_var.get()
-        seccion = seccion_var.get()
-        dia = dia_var.get()
-        empieza = empieza_var.get()
-        termina = termina_var.get()
-        salon = salon_var.get()
-        tipo = tipo_var.get()
-        profesor = entry_profesor.get()
-
-        # Llamar a la función de validación y obtener el mensaje de error o éxito
-        mensaje, CONTINUAR = validar_datos(curso, profesor)
-
-        if CONTINUAR:
-            # Si es válido, guardamos el horario
-            resultado = guardar_en_excel(curso, ciclo, seccion, dia, empieza, termina, salon, tipo, profesor, verificar_conflicto)
-
-            if "Conflicto" in resultado:  # Si el resultado contiene un conflicto
-                # Mostrar mensaje de conflicto en rojo en la interfaz
-                label_mensaje.config(text="¡Conflicto detectado! " + resultado, fg="red")
-            elif "Error" in resultado:  # Si el resultado contiene un mensaje de error
-                # Mostrar mensaje de error en rojo
-                label_mensaje.config(text=resultado, fg="red")
-            else:
-                # Actualizar el mensaje de éxito en la interfaz (verde)
-                label_mensaje.config(text="Curso agregado correctamente", fg="green")
-        else:
-            # Si hay conflicto, mostrar el mensaje de error en rojo
-            label_mensaje.config(text=mensaje, fg="red")
-
-    # Crear la ventana principal
     root = tk.Tk()
-    root.title("Planificador")
-    root.state("zoomed")
-    root.config(bg="#f0f0f0")  # Color de fondo de la ventana
-
-    # Fuente para los textos
-    fuente = ("Arial", 12)
-
-    # Crear y ubicar los widgets (labels, entradas, botones) con mejor alineación
-    frame = tk.Frame(root, bg="#f0f0f0", padx=30, pady=30)  # Frame para centralizar los widgets
-    frame.pack(expand=True)  # Empaquetamos el frame para que ocupe el 100% de la ventana
-
-    # Crear los labels y entradas de manera centrada
-    label_curso = tk.Label(frame, text="Curso:", font=fuente, bg="#f0f0f0")
-    label_curso.grid(row=0, column=0, padx=10, pady=10, sticky="w")
-    entry_curso = tk.Entry(frame, font=fuente)
-    entry_curso.grid(row=0, column=1, padx=10, pady=10, sticky="w")
-
-    # Menú desplegable para Ciclo con números romanos
-    label_ciclo = tk.Label(frame, text="Ciclo:", font=fuente, bg="#f0f0f0")
-    label_ciclo.grid(row=1, column=0, padx=10, pady=10, sticky="w")
-    ciclos_romanos = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"]
-    ciclo_var = tk.StringVar(value=ciclos_romanos[0])  # Valor por defecto
-    ciclo_menu = tk.OptionMenu(frame, ciclo_var, *ciclos_romanos)
-    ciclo_menu.config(width=15, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    ciclo_menu.grid(row=1, column=1, padx=10, pady=10, sticky="w")
-
-    # Menú desplegable para Sección
-    label_seccion = tk.Label(frame, text="Sección:", font=fuente, bg="#f0f0f0")
-    label_seccion.grid(row=2, column=0, padx=10, pady=10, sticky="w")
-    secciones = ["A", "B"]  # Opciones de sección
-    seccion_var = tk.StringVar(value=secciones[0])  # Valor por defecto
-    seccion_menu = tk.OptionMenu(frame, seccion_var, *secciones)
-    seccion_menu.config(width=10, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    seccion_menu.grid(row=2, column=1, padx=10, pady=10, sticky="w")
-
-    # Menú desplegable para Día
-    label_dia = tk.Label(frame, text="Día:", font=fuente, bg="#f0f0f0")
-    label_dia.grid(row=3, column=0, padx=10, pady=10, sticky="w")
-    dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
-    dia_var = tk.StringVar(value=dias[0])  # Valor por defecto
-    dia_menu = tk.OptionMenu(frame, dia_var, *dias)
-    dia_menu.config(width=15, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    dia_menu.grid(row=3, column=1, padx=10, pady=10, sticky="w")
-
-    # Menú desplegable para Hora de Inicio
-    label_inicio = tk.Label(frame, text="Hora de inicio:", font=fuente, bg="#f0f0f0")
-    label_inicio.grid(row=4, column=0, padx=10, pady=10, sticky="w")
-    
-    # Generar las horas de inicio de 45 en 45 minutos
-    horas_inicio = ["07:45", "08:30", "09:15", "10:00", "10:45", "11:30", "12:15", "13:00", "13:45"]
-
-    empieza_var = tk.StringVar(value=horas_inicio[0])  # Valor por defecto
-    empieza_menu = tk.OptionMenu(frame, empieza_var, *horas_inicio)
-    empieza_menu.config(width=10, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    empieza_menu.grid(row=4, column=1, padx=10, pady=10, sticky="w")
-
-    # Menú desplegable para Hora de Término
-    label_termina = tk.Label(frame, text="Hora de término:", font=fuente, bg="#f0f0f0")
-    label_termina.grid(row=5, column=0, padx=10, pady=10, sticky="w")
-    
-    horas_termina = ["08:30", "09:15", "10:00", "10:45", "11:30", "12:15", "13:00", "13:45"]
-    
-    termina_var = tk.StringVar(value=horas_termina[0])  # Valor por defecto
-    termina_menu = tk.OptionMenu(frame, termina_var, *horas_termina)
-    termina_menu.config(width=10, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    termina_menu.grid(row=5, column=1, padx=10, pady=10, sticky="w")
-
-    # Menú desplegable para Salón
-    label_salon = tk.Label(frame, text="Número de salón:", font=fuente, bg="#f0f0f0")
-    label_salon.grid(row=6, column=0, padx=10, pady=10, sticky="w")
-    salones = [f"A{i:03d}" for i in range(101, 106)]  # Opciones de salón del A101 al A105
-    salon_var = tk.StringVar(value=salones[0])  # Valor por defecto
-    salon_menu = tk.OptionMenu(frame, salon_var, *salones)
-    salon_menu.config(width=10, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    salon_menu.grid(row=6, column=1, padx=10, pady=10, sticky="w")
-
-    # Menú desplegable para Tipo de clase
-    label_tipo = tk.Label(frame, text="Tipo de clase (Teoría o Práctica):", font=fuente, bg="#f0f0f0")
-    label_tipo.grid(row=7, column=0, padx=10, pady=10, sticky="w")
-    tipos = ["Teoría", "Práctica"]  # Opciones de tipo de clase
-    tipo_var = tk.StringVar(value=tipos[0])  # Valor por defecto
-    tipo_menu = tk.OptionMenu(frame, tipo_var, *tipos)
-    tipo_menu.config(width=15, font=("Arial", 12), bg="#E0E0E0", relief="raised")
-    tipo_menu.grid(row=7, column=1, padx=10, pady=10, sticky="w")
-
-    label_profesor = tk.Label(frame, text="Nombre del profesor:", font=fuente, bg="#f0f0f0")
-    label_profesor.grid(row=8, column=0, padx=10, pady=10, sticky="w")
-    entry_profesor = tk.Entry(frame, font=fuente)
-    entry_profesor.grid(row=8, column=1, padx=10, pady=10, sticky="w")
-
-    # Label para mostrar el mensaje de éxito o error
-    label_mensaje = tk.Label(frame, text="", font=("Arial", 12, "bold"), fg="red", bg="#f0f0f0")
-    label_mensaje.grid(row=9, column=0, columnspan=2, padx=10, pady=10)
-
-    # Botón para validar y guardar el curso
-    boton_validar = tk.Button(frame, text="Validar y Guardar", command=on_validar, font=fuente, bg="#4CAF50", fg="white", relief="raised")
-    boton_validar.grid(row=10, column=0, columnspan=2, padx=10, pady=20)
-
-    # Ejecutar la interfaz
+    app = VentanaAplicacion(root)
+    root.protocol("WM_DELETE_WINDOW", root.quit)  # Para evitar que se reinicie cuando se cierra la ventana
+    root.state("zoomed")  # Maximizar la ventana
     root.mainloop()
+
+# Ejecutar la función iniciar para iniciar la interfaz
+if __name__ == "__main__":
+    iniciar()
