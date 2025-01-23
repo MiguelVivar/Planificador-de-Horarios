@@ -254,6 +254,19 @@ class VentanaAplicacion:
         else:
             messagebox.showwarning("Aviso", "No se han generado horarios aún.")
 
+
+# Función para validar datos
+def validar_datos(curso, empieza, termina, profesor):
+    if not curso or not empieza or not termina or not profesor:
+        return "Todos los campos son obligatorios.", False
+    if empieza >= termina:
+        return "La hora de inicio debe ser menor que la hora de término.", False
+    return "Datos validados correctamente.", True
+
+# Función ficticia para verificar conflictos (esto debe definirse en el archivo `guardar_excel.py`)
+def verificar_conflicto(hoja, curso, dia, empieza, termina, salon):
+    return "No hay conflictos.", True  # Aquí puedes usar la lógica real de conflictos.
+
 def iniciar():
     """
     Inicia la aplicación y muestra la ventana principal.
