@@ -1,13 +1,16 @@
 import pandas as pd
 import os
-import shutil
 import openpyxl
 from openpyxl.styles import PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
-from openpyxl.worksheet.table import Table, TableStyleInfo
 from datetime import datetime, timedelta
 
 def aplicar_bordes_y_relleno(cell, color_fondo):
+    """
+    Aplica bordes y relleno de color a una celda de Excel.
+    :param cell: Celda a la que se aplicarán los estilos.
+    :param color_fondo: Color de fondo de la celda.
+    """
     color_borde = "000000"  # Color del borde (negro)
     cell.alignment = Alignment(horizontal="center", vertical="center")
     cell.border = Border(
@@ -19,6 +22,10 @@ def aplicar_bordes_y_relleno(cell, color_fondo):
     cell.fill = PatternFill(start_color=color_fondo, end_color=color_fondo, fill_type="solid")
 
 def obtener_ciclos():
+    """
+    Obtiene los ciclos disponibles desde el archivo Excel.
+    :return: Lista de tuplas con (ciclo, secciones, turno).
+    """
     try:
         df = pd.read_excel("data/datos.xlsx", sheet_name="Ciclos")
         return [(str(row[0]), row[1], row[2]) for row in df.itertuples(index=False, name=None)]
@@ -26,8 +33,12 @@ def obtener_ciclos():
         print(f"Error al leer la hoja 'Ciclos': {e}")
         return []
 
-
 def obtener_cursos(ciclo):
+    """
+    Obtiene los cursos disponibles para un ciclo específico.
+    :param ciclo: Ciclo seleccionado.
+    :return: Lista de cursos.
+    """
     try:
         df = pd.read_excel("data/datos.xlsx", sheet_name="Cursos")
         cursos = df[df['Ciclo'] == ciclo]['Curso'].tolist()
@@ -36,8 +47,12 @@ def obtener_cursos(ciclo):
         print(f"Error al leer la hoja 'Cursos': {e}")
         return []
 
-
 def obtener_profesores(curso):
+    """
+    Obtiene los profesores disponibles para un curso específico.
+    :param curso: Curso seleccionado.
+    :return: Lista de profesores.
+    """
     try:
         df = pd.read_excel("data/datos.xlsx", sheet_name="Profesores")
         profesores = df[df['Cursos'].str.contains(curso)]['Profesor'].tolist()
@@ -47,6 +62,10 @@ def obtener_profesores(curso):
         return []
     
 def obtener_salones():
+    """
+    Obtiene los salones disponibles desde el archivo Excel.
+    :return: Lista de salones.
+    """
     try:
         df = pd.read_excel("data/datos.xlsx", sheet_name="Salones")
         salones = df['Salón'].tolist()
@@ -56,6 +75,20 @@ def obtener_salones():
         return []
 
 def guardar_horario_excel(ciclo, seccion, empieza, termina, curso, profesor, tipo, dia, salon, turno):
+    """
+    Guarda el horario generado en un archivo Excel.
+    :param ciclo: Ciclo seleccionado.
+    :param seccion: Sección seleccionada.
+    :param empieza: Hora de inicio de la clase.
+    :param termina: Hora de fin de la clase.
+    :param curso: Curso seleccionado.
+    :param profesor: Profesor seleccionado.
+    :param tipo: Tipo de clase (Teoría/Práctica).
+    :param dia: Día de la clase.
+    :param salon: Salón seleccionado.
+    :param turno: Turno seleccionado (Mañana/Tarde).
+    :return: Mensaje de éxito o error.
+    """
     nombre_archivo = f"horario_{ciclo}_{seccion}.xlsx"
     ruta_carpeta = "data/horarios"
     
@@ -72,10 +105,10 @@ def guardar_horario_excel(ciclo, seccion, empieza, termina, curso, profesor, tip
         hoja = wb.active
         hoja.append(["Hora", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"])
 
-    color_encabezado = "ADD8E6"
-    color_fila_par = "F0F8FF"
-    color_fila_impar = "FFFFFF"
-    color_borde = "000000"
+    color_encabezado = "ADD8E6"  # Color de fondo para el encabezado
+    color_fila_par = "F0F8FF"    # Color de fondo para filas pares
+    color_fila_impar = "FFFFFF"  # Color de fondo para filas impares
+    color_borde = "000000"       # Color del borde
 
     if turno == "Mañana":
         horas = [
